@@ -1,16 +1,13 @@
-## Hi there 👋
+### Hi, I'm Max 👋
+**AI Product Builder & Technical Marketer based in Cyprus 🇨🇾**
 
-<!--
-**Nyaopx/Nyaopx** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+I build and ship full-stack web applications, automated LLM workflows, and multi-tenant platforms using modern agentic toolchains.
 
-Here are some ideas to get you started:
+#### 🚀 Live Production Platforms
+* **[MaxiFTW Studio](https://maxiftw.com)** — Commercial freelance web & automation studio.
+* **[Harajda Dent](https://harajdadent.hu)** — 5-language clinic platform with live online booking and SEO recovery.
+* **[LCA Garage](https://lca-garage.maxiftw.com)** — Automotive repair booking and customer portal.
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+*(Most commercial client repositories and SaaS engines like Leo POS are private. Reach out to request a walkthrough of architecture blueprints and test suites.)*
+
+📫 **Contact**: m.burtyn7@gmail.com | [LinkedIn](https://linkedin.com)
