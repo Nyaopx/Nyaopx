@@ -283,27 +283,39 @@ def pad_quad(q, img_shape, frac=0.03):
     return out.astype(np.int32)
 
 
-def cover(img, results, pad=0.03):
+def cover(img, results, pad=0.03, plaque_style="white"):
+    """plaque_style: "white" = plain white fill, no border (hides the provider name)
+                     "blend" = fill with the panel's own dominant colour, so the
+                               pole/column just looks blank"""
     out = img.copy()
     if not results:
         return out
+
+    # Plaques first, so the billboard covers sit cleanly on top where they touch.
+    for r in results:
+        if r["plaque"] is None:
+            continue
+        q = pad_quad(r["plaque"], img.shape, pad)
+        if plaque_style == "blend":
+            x1, y1, x2, y2 = bbox(q)
+            # text/logo is a minority of the panel, so the median is the panel colour
+            colour = tuple(int(c) for c in np.median(img[y1:y2, x1:x2].reshape(-1, 3), axis=0))
+        else:
+            colour = WHITE
+        cv2.fillPoly(out, [q.reshape(-1, 1, 2)], colour)
+
     # Target = biggest billboard (biggest on screen is almost always the closest)
     target_i = max(range(len(results)), key=lambda i: quad_area(results[i]["board"]))
     order = [i for i in range(len(results)) if i != target_i] + [target_i]  # target drawn last, on top
-
     for i in order:
-        r = results[i]
-        shapes = [pad_quad(r["board"], img.shape, pad)]
-        if r["plaque"] is not None:
-            shapes.append(pad_quad(r["plaque"], img.shape, pad * 2))
-        for q in shapes:
-            pts = q.reshape(-1, 1, 2)
-            if i == target_i:
-                cv2.fillPoly(out, [pts], WHITE)
-                thick = max(3, int(0.03 * min(bbox(q)[2] - bbox(q)[0], bbox(q)[3] - bbox(q)[1])))
-                cv2.polylines(out, [pts], True, ORANGE, thick, cv2.LINE_AA)
-            else:
-                cv2.fillPoly(out, [pts], GRAY)
+        q = pad_quad(results[i]["board"], img.shape, pad)
+        pts = q.reshape(-1, 1, 2)
+        if i == target_i:
+            cv2.fillPoly(out, [pts], WHITE)
+            thick = max(3, int(0.03 * min(bbox(q)[2] - bbox(q)[0], bbox(q)[3] - bbox(q)[1])))
+            cv2.polylines(out, [pts], True, ORANGE, thick, cv2.LINE_AA)
+        else:
+            cv2.fillPoly(out, [pts], GRAY)
     return out
 
 
@@ -317,6 +329,8 @@ def main():
     ap.add_argument("--mode", choices=["cv", "haiku"], default="cv")
     ap.add_argument("--max", type=int, default=4, help="cv mode: max billboards per image")
     ap.add_argument("--pad", type=float, default=0.03, help="grow covers by this fraction")
+    ap.add_argument("--plaque", choices=["white", "blend"], default="white",
+                    help="provider panel cover: plain white box, or blend into the column's own colour")
     ap.add_argument("--debug", action="store_true", help="cv mode: save *_debug.jpg with candidates")
     ap.add_argument("--json", action="store_true", help="also write detected corners as *.json")
     ap.add_argument("--boxes", help="skip detection: JSON file of boxes per image filename, "
@@ -360,7 +374,7 @@ def main():
             print(f"  error: {e}")
             continue
 
-        cv2.imwrite(str(dst), cover(img, results, args.pad))
+        cv2.imwrite(str(dst), cover(img, results, args.pad, args.plaque))
         plaques = sum(r["plaque"] is not None for r in results)
         print(f"  {len(results)} billboard(s), {plaques} plaque(s) -> {dst}")
         if args.json:
