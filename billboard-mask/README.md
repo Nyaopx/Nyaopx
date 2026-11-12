@@ -36,3 +36,5 @@ python billboard_mask.py photos/ -o out/ --mode haiku   # use Claude Haiku inste
 - `--max N`: CV mode, the most billboards to keep per image (default 4)
 - `--pad 0.03`: grow each cover by 3% so the board's frame edge is hidden too
 - `--json`: also save the detected corners next to each output image
+- `--boxes boxes.json`: skip detection and use boxes you supply (same shape Haiku returns), keyed by filename:
+  `{"photo.jpg": {"billboards": [{"box": {"x1": 42, "y1": 7, "x2": 266, "y2": 174}, "plaque": {"x1": 132, "y1": 174, "x2": 186, "y2": 312}}]}}`

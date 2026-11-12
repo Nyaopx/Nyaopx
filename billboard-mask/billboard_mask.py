@@ -251,16 +251,21 @@ def detect_haiku(img, client):
     text = next(b.text for b in resp.content if b.type == "text")
     data = json.loads(text)
 
+    u = resp.usage
+    cost = u.input_tokens * 0.10 / 1e6 + u.output_tokens * 0.50 / 1e6
+    print(f"  haiku: {u.input_tokens} in / {u.output_tokens} out tokens, ~${cost:.5f}")
+    return results_from_boxes(data, scale)
+
+
+def results_from_boxes(data, scale=1.0):
+    """{"billboards": [{"box": {x1,y1,x2,y2}, "plaque": {...} | null}, ...]} -> results"""
     def to_quad(b):
         x1, x2 = sorted((b["x1"], b["x2"]))
         y1, y2 = sorted((b["y1"], b["y2"]))
         return (box_to_quad(x1, y1, x2, y2) / scale).astype(np.int32)
 
-    u = resp.usage
-    cost = u.input_tokens * 0.10 / 1e6 + u.output_tokens * 0.50 / 1e6
-    print(f"  haiku: {u.input_tokens} in / {u.output_tokens} out tokens, ~${cost:.5f}")
     return [
-        {"board": to_quad(bb["box"]), "plaque": to_quad(bb["plaque"]) if bb["plaque"] else None}
+        {"board": to_quad(bb["box"]), "plaque": to_quad(bb["plaque"]) if bb.get("plaque") else None}
         for bb in data["billboards"]
     ]
 
@@ -314,6 +319,8 @@ def main():
     ap.add_argument("--pad", type=float, default=0.03, help="grow covers by this fraction")
     ap.add_argument("--debug", action="store_true", help="cv mode: save *_debug.jpg with candidates")
     ap.add_argument("--json", action="store_true", help="also write detected corners as *.json")
+    ap.add_argument("--boxes", help="skip detection: JSON file of boxes per image filename, "
+                    'e.g. {"photo.jpg": {"billboards": [{"box": {"x1":..,"y1":..,"x2":..,"y2":..}, "plaque": null}]}}')
     args = ap.parse_args()
 
     src = Path(args.input)
@@ -323,7 +330,8 @@ def main():
         out_dir.mkdir(parents=True, exist_ok=True)
 
     client = None
-    if args.mode == "haiku":
+    given = json.loads(Path(args.boxes).read_text()) if args.boxes else None
+    if args.mode == "haiku" and not given:
         import anthropic
         client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
 
@@ -341,7 +349,9 @@ def main():
 
         print(f"{f.name}:")
         try:
-            if args.mode == "cv":
+            if given is not None:
+                results = results_from_boxes(given.get(f.name, {"billboards": []}))
+            elif args.mode == "cv":
                 dbg = dst.with_name(f"{f.stem}_debug.jpg") if args.debug else None
                 results = detect_cv(img, args.max, dbg)
             else:
