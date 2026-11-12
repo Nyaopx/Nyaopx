@@ -307,7 +307,7 @@ def blend_colour(img, q, boards_mask):
     return None
 
 
-def cover(img, results, pad=0.03, plaque_style="white"):
+def cover(img, results, pad=0.03, plaque_style="blend"):
     """plaque_style: "white" = plain white fill, no border (hides the provider name)
                      "blend" = fill with the panel's own dominant colour, so the
                                pole/column just looks blank"""
@@ -358,8 +358,8 @@ def main():
     ap.add_argument("--mode", choices=["cv", "haiku"], default="cv")
     ap.add_argument("--max", type=int, default=4, help="cv mode: max billboards per image")
     ap.add_argument("--pad", type=float, default=0.03, help="grow covers by this fraction")
-    ap.add_argument("--plaque", choices=["white", "blend"], default="white",
-                    help="provider panel cover: plain white box, or blend into the column's own colour")
+    ap.add_argument("--plaque", choices=["blend", "white"], default="blend",
+                    help="provider panel cover: blend it away (default), or a plain white box")
     ap.add_argument("--debug", action="store_true", help="cv mode: save *_debug.jpg with candidates")
     ap.add_argument("--json", action="store_true", help="also write detected corners as *.json")
     ap.add_argument("--boxes", help="skip detection: JSON file of boxes per image filename, "

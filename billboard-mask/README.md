@@ -4,7 +4,7 @@ Finds billboards in a photo and covers them:
 
 - **Target billboard** (the biggest one, which is usually the closest): white fill with an orange border
 - **All other billboards**: gray fill
-- **Provider plaques / pole panels**: covered with a plain white box (no border), or with `--plaque blend` made to disappear: plaques on a plain wall get the wall colour, tall pole panels get the column's own colour, and plaques on a busy facade are filled in from their surroundings
+- **Provider plaques / pole panels**: made to disappear by default: plaques on a plain wall get the wall colour, tall pole panels get the column's own colour, and plaques on a busy facade are filled in from their surroundings. `--plaque white` covers them with a plain white box instead
 
 ```bash
 pip install -r requirements.txt
@@ -34,7 +34,7 @@ python billboard_mask.py photos/ -o out/ --mode haiku   # use Claude Haiku inste
 ## Options
 
 - `--max N`: CV mode, the most billboards to keep per image (default 4)
-- `--plaque white|blend`: how to hide the provider panel (default `white`)
+- `--plaque blend|white`: how to hide the provider panel (default `blend`)
 - `--pad 0.03`: grow each cover by 3% so the board's frame edge is hidden too
 - `--json`: also save the detected corners next to each output image
 - `--boxes boxes.json`: skip detection and use boxes you supply (same shape Haiku returns), keyed by filename:
