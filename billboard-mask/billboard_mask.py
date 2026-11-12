@@ -260,6 +260,8 @@ def detect_haiku(img, client):
 def results_from_boxes(data, scale=1.0):
     """{"billboards": [{"box": {x1,y1,x2,y2}, "plaque": {...} | null}, ...]} -> results"""
     def to_quad(b):
+        if isinstance(b, list):  # 4 corner points [[x, y], ...] for angled boards
+            return (np.array(b, dtype=np.float32) / scale).astype(np.int32)
         x1, x2 = sorted((b["x1"], b["x2"]))
         y1, y2 = sorted((b["y1"], b["y2"]))
         return (box_to_quad(x1, y1, x2, y2) / scale).astype(np.int32)
@@ -283,6 +285,28 @@ def pad_quad(q, img_shape, frac=0.03):
     return out.astype(np.int32)
 
 
+def blend_colour(img, q, boards_mask):
+    """Colour that makes a covered plaque disappear, or None = inpaint it.
+    Plaque on a plain wall -> use the wall colour around it.
+    Tall panel on a pole   -> use the panel's own colour, so the column looks blank.
+    Wide plaque on a busy facade -> None: fill it in from its surroundings."""
+    H, W = img.shape[:2]
+    x1, y1, x2, y2 = bbox(q)
+    m = max(4, (y2 - y1) // 3)
+    X1, Y1, X2, Y2 = max(0, x1 - m), max(0, y1 - m), min(W, x2 + m), min(H, y2 + m)
+    ring = np.ones((Y2 - Y1, X2 - X1), bool)
+    ring[y1 - Y1:y2 - Y1, x1 - X1:x2 - X1] = False
+    ring &= ~boards_mask[Y1:Y2, X1:X2]  # ignore the billboard the plaque hangs off
+    around = img[Y1:Y2, X1:X2][ring].astype(np.float32)
+    # median absolute deviation: plain wall stays low even with a window edge in view
+    if len(around) > 20 and np.median(np.abs(around - np.median(around, axis=0)), axis=0).mean() < 10:
+        return tuple(int(c) for c in np.median(around, axis=0))
+    if y2 - y1 > x2 - x1:
+        # text/logo is a minority of the panel, so the median is the panel colour
+        return tuple(int(c) for c in np.median(img[y1:y2, x1:x2].reshape(-1, 3), axis=0))
+    return None
+
+
 def cover(img, results, pad=0.03, plaque_style="white"):
     """plaque_style: "white" = plain white fill, no border (hides the provider name)
                      "blend" = fill with the panel's own dominant colour, so the
@@ -291,18 +315,23 @@ def cover(img, results, pad=0.03, plaque_style="white"):
     if not results:
         return out
 
+    boards_mask = np.zeros(img.shape[:2], np.uint8)
+    for r in results:
+        cv2.fillPoly(boards_mask, [pad_quad(r["board"], img.shape, pad).reshape(-1, 1, 2)], 1)
+    boards_mask = boards_mask.astype(bool)
+
     # Plaques first, so the billboard covers sit cleanly on top where they touch.
     for r in results:
         if r["plaque"] is None:
             continue
         q = pad_quad(r["plaque"], img.shape, pad)
-        if plaque_style == "blend":
-            x1, y1, x2, y2 = bbox(q)
-            # text/logo is a minority of the panel, so the median is the panel colour
-            colour = tuple(int(c) for c in np.median(img[y1:y2, x1:x2].reshape(-1, 3), axis=0))
+        colour = blend_colour(img, q, boards_mask) if plaque_style == "blend" else WHITE
+        if colour is None:
+            hole = np.zeros(img.shape[:2], np.uint8)
+            cv2.fillPoly(hole, [q.reshape(-1, 1, 2)], 255)
+            out = cv2.inpaint(out, cv2.dilate(hole, np.ones((5, 5), np.uint8)), 9, cv2.INPAINT_NS)
         else:
-            colour = WHITE
-        cv2.fillPoly(out, [q.reshape(-1, 1, 2)], colour)
+            cv2.fillPoly(out, [q.reshape(-1, 1, 2)], colour)
 
     # Target = biggest billboard (biggest on screen is almost always the closest)
     target_i = max(range(len(results)), key=lambda i: quad_area(results[i]["board"]))

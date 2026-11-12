@@ -4,7 +4,7 @@ Finds billboards in a photo and covers them:
 
 - **Target billboard** (the biggest one, which is usually the closest): white fill with an orange border
 - **All other billboards**: gray fill
-- **Provider plaques / pole panels**: covered with a plain white box (no border), or with `--plaque blend` filled in the column's own colour so the pole looks blank
+- **Provider plaques / pole panels**: covered with a plain white box (no border), or with `--plaque blend` made to disappear: plaques on a plain wall get the wall colour, tall pole panels get the column's own colour, and plaques on a busy facade are filled in from their surroundings
 
 ```bash
 pip install -r requirements.txt
@@ -39,3 +39,4 @@ python billboard_mask.py photos/ -o out/ --mode haiku   # use Claude Haiku inste
 - `--json`: also save the detected corners next to each output image
 - `--boxes boxes.json`: skip detection and use boxes you supply (same shape Haiku returns), keyed by filename:
   `{"photo.jpg": {"billboards": [{"box": {"x1": 42, "y1": 7, "x2": 266, "y2": 174}, "plaque": {"x1": 132, "y1": 174, "x2": 186, "y2": 312}}]}}`
+  For a board shot at an angle, give `"box"` as 4 corner points instead: `[[393, 139], [562, 161], [562, 351], [391, 350]]`
