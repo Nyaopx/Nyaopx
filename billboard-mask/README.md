@@ -24,6 +24,11 @@ python billboard_mask.py photos/ -o out/ --mode haiku   # use Claude Haiku inste
 | Works well on | clear shots where the board has a visible rectangular frame against sky or a plain background | almost anything: cluttered streets, partly blocked boards, odd angles |
 | Fails on | cluttered scenes (windows, trucks and shop signs look like rectangles too), boards with no contrasting frame, heavy occlusion | very small or distant boards; boxes can be a few % loose |
 
+> **Tested on real roadside photos (Cyprus, Maltezos Media boards): CV mode failed on all three.** It boxed
+> windows, a palm tree and a shop sign and missed the actual billboards, because the frames merge with
+> poles and buildings in the edge map and dark ads blend into dark frames. Use `--mode haiku` for real photos;
+> CV mode is only usable on very clean shots.
+
 **How CV mode works:** edge detection → find 4-cornered, rectangle-like, landscape-shaped outlines → drop shapes nested inside bigger ones → keep the largest few. For plaques it searches a strip just above and below each board for a small, wide, solid sign, with the thin mounting pole filtered out.
 
 ## Options

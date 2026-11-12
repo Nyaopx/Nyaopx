@@ -189,11 +189,12 @@ def detect_cv(img, max_boards=4, debug_path=None):
 HAIKU_PROMPT = (
     "Find every billboard in this image (roadside/rooftop advertising boards, "
     "static or digital). For each, give its pixel bounding box in THIS image "
-    "({w}x{h}), covering the whole board face including its frame. If a small "
-    "provider/owner plaque or nameplate is attached to the billboard (usually "
-    "below or on top of it), give its box too, else null. Do not include poles, "
-    "street signs, shop signs on building facades, or vehicles. Return an empty "
-    "list if there are none."
+    "({w}x{h}), covering the whole board face including its frame. If the "
+    "billboard has a provider/owner name panel (often a tall vertical panel on "
+    "the support pole under the board with the media company name, or a small "
+    "nameplate above/below the board), give a box covering that panel too, else "
+    "null. Do not include street signs, shop signs on building facades, or "
+    "vehicles. Return an empty list if there are none."
 )
 BOX = {
     "type": "object",
